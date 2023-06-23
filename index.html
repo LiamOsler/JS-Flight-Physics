@@ -8,7 +8,10 @@
             {
                 "imports": {
                     "three": "/three/three.module.js",
-                    "OrbitControls": "/three/OrbitControls.js"
+                    "OrbitControls": "/three/OrbitControls.js",
+                    "inputs": "/js/inputs.js",
+                    "world" : "/world/world.js",
+                    "game" : "/game/game.js"
                 }
             }
         </script>
@@ -29,7 +32,7 @@
                 left: 0;
                 max-width: 600px;
                 height: 100vh;
-                overflow-y: scroll;
+                overflow-y: auto;
                 z-index: 1000 !important;
             }
             .gui-width{
@@ -48,16 +51,9 @@
             <div id="gui-area">
                 <div class="gui-width" >
                     <div id="gui-nav">
-                        <button class = "gui-nav-button" id="gui-nav-button-location">Location</button>
-                        <button class = "gui-nav-button" id="gui-nav-button-properties">Properties</button>
-                        <button class = "gui-nav-button" id="gui-nav-button-properties">Controls</button>
                     </div>
                     <div id = "gui-content">
-                        <div class = "gui-content-area" id = "gui-content-location"></div>
-                        <div class = "gui-content-area" id = "gui-content-properties"></div>
-                        <div class = "gui-content-area" id = "gui-content-controls">
-                            
-                        </div>
+                        <div id = "score-text"></div>
                     </div>
                 </div>
             </div>
