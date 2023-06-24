@@ -1,8 +1,10 @@
 
 import { inputs } from 'inputs';
+import * as THREE from 'three';
+
 
 // Constants
-const GRAVITY = 981; // m/s^2
+const GRAVITY = 9.81; // m/s^2
 const AIR_DENSITY = 1.225; // kg/m^3
 const AIR_VISCOSITY = 1.7894e-5; // kg/(m*s)
 
@@ -22,17 +24,19 @@ class World {
     addObject(object){
         this.objects.push(object);
     }
-    update(testBow, targetParameters){
+    update(){
         this.frameCount++;
         this.time = this.clock.getElapsedTime();
-        this.frameTime = this.time - this.lastFrameTime; 
+        this.frameTime = this.time - this.lastFrameTime;
         this.lastFrameTime = this.time;
+
         for(let i = 0; i < this.objects.length; i++){
-            if( this.frameTime){
-                this.objects[i].update(this.frameTime, testBow, targetParameters);
+            let frameTime = this.frameTime;
+            if(!frameTime){
+                frameTime = 0;
             }
+            this.objects[i].update(frameTime, this.time);
         }
-        
     }
 }
 
@@ -89,7 +93,9 @@ class MovingObject extends Topography{
         this.angularVelocity.z += this.angularAcceleration.z * frameTime;
     }
     updateAcceleration(){
-        this.acceleration.z = -GRAVITY;
+        // this.acceleration.x = 0;
+        // this.acceleration.y = 0;
+        // this.acceleration.y = -GRAVITY;
         
     }
 }
@@ -106,147 +112,35 @@ class Ball extends MovingObject{
                 angularAcceleration: params.angularAcceleration
             }
         );
+        this.mesh = params.mesh;
+        
+    }
+    addToScene(scene){
+        scene.add(this.mesh);
+    }
+    
+    updateMesh(){
+        this.mesh.position.x = this.position.x;
+        this.mesh.position.y = this.position.y;
+        this.mesh.position.z = this.position.z;
+
+        this.mesh.rotation.x = this.rotation.x;
+        this.mesh.rotation.y = this.rotation.y;
+        this.mesh.rotation.z = this.rotation.z;
     }
 
     update(frameTime){
+
         this.updatePosition(frameTime);
         this.updateVelocity(frameTime);
         this.updateAcceleration(frameTime);
         this.updateRotation(frameTime);
         this.updateAngularVelocity(frameTime);
+
+        this.updateMesh();
     }
 }
 
-class Target extends Topography{
-    constructor(params){
-        super(
-            {
-                position: params.position,
-                rotation: params.rotation,
-            }
-        );
-    }
-
-}
-
-class Bow extends Topography{
-    constructor(params){
-        super(
-            {
-                position: params.position,
-                rotation: params.rotation,
-            }
-        );
-    }
-
-    update(frameTime){
-        // this.updatePosition({x: 10, y: 0, z: 0});
-        this.updateRotation(
-            {
-                x: 0,
-                y: inputs.mouseY / window.innerHeight * Math.PI/2 - Math.PI/4,
-                z: inputs.mouseX / window.innerWidth * 2 * Math.PI / 2,
-            }
-        );
-    }
-}
-
-class Arrow extends MovingObject{
-    constructor(params){
-        super(
-            {
-                position: params.position,
-                rotation: params.rotation,
-                velocity: params.velocity,
-                acceleration: params.acceleration,
-                angularVelocity: params.angularVelocity,
-                angularAcceleration: params.angularAcceleration
-            }
-        );
-        this.arrowState = 'notched';
-        this.torque = {
-            x: 0,
-            y: 0,
-            z: 0
-        }
-        this.liftCoefficientFront = 0.15;
-        this.dragCoefficientFront = 0.47;
-        this.liftCoefficientBack= 0.15;
-        this.dragCoefficientBack = 0.47;
-        this.length = 100;
-        this.looseAngle = {};
-        this.score = 0;
-        this.lastScore = 0;
-    }
-    update(frameTime, bow, targetParameters){
-        if(this.arrowState == 'stationary'){
-            this.position.x = bow.position.x + Math.cos(bow.rotation.y) * Math.cos(bow.rotation.z - Math.PI/2) * this.length / 2;
-            this.position.y = bow.position.y + Math.sin(bow.rotation.z - Math.PI/2) * this.length /2;
-            this.position.z = bow.position.z ;
-
-        }
-        else if(this.arrowState == 'notched'){
-            this.rotation.x = bow.rotation.x;
-            this.rotation.y = bow.rotation.y;
-            this.rotation.z = bow.rotation.z;
-            this.position.x = bow.position.x + Math.cos(bow.rotation.y) * Math.cos(bow.rotation.z - Math.PI/2) * this.length / 2 + bow.bowDrawAmount/50;
-            this.position.y = bow.position.y + Math.sin(bow.rotation.z - Math.PI/2) * this.length /2;
-            this.position.z = bow.position.z ;
-        }
-        else if(this.arrowState == 'loosing'){
-            let bowPower = bow.bowDrawAmount * 6;
-            this.velocity.x = - bowPower * Math.cos(this.looseAngle.y) * Math.cos(this.looseAngle.z - Math.PI/2);
-            this.velocity.y = - bowPower * Math.sin(this.looseAngle.z - Math.PI/2);
-            this.velocity.z = bowPower * Math.sin(this.looseAngle.y) * Math.cos(this.looseAngle.z - Math.PI/2);
-            this.updatePosition(frameTime);
-        }
-
-        else if(this.arrowState  == 'flying'){
 
 
-            let distanceToTarget = {
-                x: targetParameters.position.x - this.position.x - this.velocity.x * frameTime - this.length /2 ,
-                y: targetParameters.position.y - this.position.y - this.velocity.y * frameTime - this.length /2 ,
-                z: targetParameters.position.z - this.position.z - this.velocity.z * frameTime - this.length /2 ,
-            }
-    
-            let distanceToTargetMagnitude = Math.sqrt(distanceToTarget.x ** 2 + distanceToTarget.y ** 2);
-            
-            if(distanceToTargetMagnitude < 100){
-                this.arrowState = 'stationary';
-                this.score += 1;
-            }else{
-                this.updatePosition(frameTime);
-                this.updateVelocity(frameTime);
-                this.updateAcceleration(frameTime);
-                this.updateRotation(frameTime);
-                this.updateAngularVelocity(frameTime);
-            }
-            
-            // this.angleOfAttack = Math.atan(this.velocity.y / this.velocity.x);
-            // // console.log(this.angleOfAttack)
-
-            // this.lift = 0.5 * AIR_DENSITY * this.velocity.x * this.velocity.x * this.area * this.liftCoefficient * Math.sin(this.angleOfAttack);
-            // this.drag = 0.5 * AIR_DENSITY * this.velocity.x * this.velocity.x * this.area * this.dragCoefficient * Math.cos(this.angleOfAttack);
-
-        }
-
-        // if(this.position.z < -100 || this.position.x <= -1100){
-        //     this.arrowState = 'stationary';
-
-        //     this.velocity.x = 0;
-        //     this.velocity.y = 0;
-        //     this.velocity.z = 0;
-
-        //     this.position.x = -1000 + this.length;
-
-
-        // }
-    }
-    getScore(){
-        return this.score;
-    }
-
-}
-
-export {World, Topography, MovingObject, Ball, Bow, Arrow};
+export {World, Topography, MovingObject, Ball };
