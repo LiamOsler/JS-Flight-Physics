@@ -197,7 +197,7 @@ class ForceSphere extends MovingObject{
                 position: new THREE.Vector3(0, -1, 0), 
                 rotation: new THREE.Vector3(0, 0, 0),
                 direction: new THREE.Vector3(0, 1, 0),
-                force: .1
+                force: 10
             }),
         ];
 
@@ -245,8 +245,6 @@ class ForceSphere extends MovingObject{
         scene.add(this.mesh);
     }
     updateMesh(){
-        
-
 
         this.mesh.position.x = this.position.x;
         this.mesh.position.y = this.position.y;
@@ -281,6 +279,7 @@ class ForceSphere extends MovingObject{
 
         this.angularAcceleration = totalTorque;
         this.acceleration = totalForce;
+        this.acceleration.y -= 9.81
 
 
     }
