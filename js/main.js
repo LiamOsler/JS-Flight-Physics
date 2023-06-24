@@ -1,6 +1,6 @@
 import { inputs } from 'inputs';
 
-import { World, Ball} from 'world';
+import { World, Ball, SpaceShip} from 'world';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
@@ -21,10 +21,10 @@ const scene = new THREE.Scene( );
 
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
 
-const controls = new OrbitControls( camera, renderer.domElement );
+// const controls = new OrbitControls( camera, renderer.domElement );
 
 camera.position.set( -10, 10, 10 );
-controls.update();
+// controls.update();
 
 
 const axesHelper = new THREE.AxesHelper( 50 );
@@ -63,7 +63,7 @@ for(let i = 0; i < 10; i++){
                 let ball = new Ball({
                     position: new THREE.Vector3(i * 100 + Math.random() * 50, j * 100 + Math.random() * 50, k * 100 + Math.random() * 50),
                     rotation: new THREE.Vector3(0, 0, 0),
-                    velocity: new THREE.Vector3((Math.random()-.5)*2, (Math.random()-.5)*2,(Math.random()-.5)*2),
+                    velocity: new THREE.Vector3((Math.random()-.5)*5, (Math.random()-.5)*5,(Math.random()-.5)*5),
                     acceleration: new THREE.Vector3(0, 0, 0),
                     angularVelocity: new THREE.Vector3(0, 0, 0),
                     angularAcceleration: new THREE.Vector3(0, 0, 0),
@@ -76,9 +76,21 @@ for(let i = 0; i < 10; i++){
                 ball.updateMesh();
                 world.addObject(ball);
         }
-    }
-    
+    }   
 }
+
+let enterprise = new SpaceShip ({
+    position: new THREE.Vector3(0, 0, 0),
+    rotation: new THREE.Vector3(0, 0, 0),
+    velocity: new THREE.Vector3(0, 0, 0),
+    acceleration: new THREE.Vector3(0, 0, 0),
+    angularVelocity: new THREE.Vector3(0, 0, 0),
+    angularAcceleration: new THREE.Vector3(0, 0, 0),
+});
+
+enterprise.createMesh();
+
+world.addObject(enterprise);
 
 // let ball = new Ball({
 //     position: sphere.position,
@@ -110,8 +122,28 @@ function init(){
 init();
 
 
+
 function animate( ) {
     // console.log(arrow)
+
+    let cameraGroup = new THREE.Group();
+    // cameraGroup.position.set(enterprise.position.x, enterprise.position.y, enterprise.position.z);
+    // cameraGroup.rotation.set(enterprise.rotation.x, enterprise.rotation.y, enterprise.rotation.z);
+    cameraGroup.add(camera);
+
+    cameraGroup.rotation.set(enterprise.rotation.x, enterprise.rotation.y , enterprise.rotation.z);
+
+    cameraGroup.position.set(enterprise.position.x, enterprise.position.y, enterprise.position.z);
+    camera.position.set(0, -10, 0);
+
+    //chase camera
+
+
+
+
+
+    camera.lookAt(enterprise.position.x, enterprise.position.y, enterprise.position.z);
+    
 
     world.update();
 
@@ -119,7 +151,7 @@ function animate( ) {
 	requestAnimationFrame( animate );
 
 
-    controls.update( );
+    // controls.update( );
 
 	renderer.render( scene, camera );
 }
