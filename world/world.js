@@ -141,7 +141,21 @@ class Ball extends MovingObject{
     }
 }
 
-class SpaceShip extends MovingObject{
+class Thruster{
+    constructor(params){
+        this.position = params.position;
+        this.rotation = params.rotation;
+        this.force = params.force;
+        this.direction = params.direction;
+        this.origin = params.origin;
+        this.radius = params.position.distanceTo(params.origin);
+    }
+}
+
+const wireframeMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: true});
+const meshNormalMaterial = new THREE.MeshNormalMaterial();
+
+class ForceSphere extends MovingObject{
     constructor(params){
         super(
             {
@@ -153,92 +167,87 @@ class SpaceShip extends MovingObject{
                 angularAcceleration: params.angularAcceleration
             }
         );
-        this.hull = {
-            hull1: {
-                type: 'cylinder',
-                position: new THREE.Vector3(0,0,0),
-                rotation: new THREE.Vector3(0,0,0),
-                length: 2,
-                radius: 1,
-                mass: 1,
-            },
-            hull2: {
-                type: 'cylinder',
-                position: new THREE.Vector3(0,2,0),
-                rotation: new THREE.Vector3(0,0,0),
-                length: 2,
-                radius: .6,
-                mass: 1,
-            },
-            hull3: {
-                type: 'cylinder',
-                position: new THREE.Vector3(0,4,0),
-                rotation: new THREE.Vector3(0,0,0),
-                length: 2,
-                radius: .3,
-                mass: 1,
-            },
-        }
-        this.thrusters = {
-            primary:{
-                type: 'cone',
-                position: new THREE.Vector3(0,-2,0),
-                direction: new THREE.Vector3(0,0,0),
-                length: 2,
-                radius: 1,
-                mass: 1,
-                thrust: .1
-                }
-            }
-        }
+        
+        
+        this.thrusters = [
+            new Thruster({
+                origin: this.position,
+                position: new THREE.Vector3(1, 0, 0), 
+                rotation: new THREE.Vector3(0, 0, 0),
+                direction: new THREE.Vector3(1, 0, 1),
+                force: .1
+            }),
+            new Thruster({
+                origin: this.position,
+                position: new THREE.Vector3(-1, 0, 0), 
+                rotation: new THREE.Vector3(0, 0, 0),
+                direction: new THREE.Vector3(-1, 0, -1),
+                force: .1
+            }),
+            // new Thruster({
+            //     origin: this.position,
+            //     position: new THREE.Vector3(-1, 0, 0), 
+            //     rotation: new THREE.Vector3(0, 0, 0),
+            //     direction: new THREE.Vector3(1, 0, 0),
+            //     force: 0
+            // }),
 
-    createMesh(){
-        let shipGroup = new THREE.Group();
-        for(let key in this.hull){
-            console.log(key);
-            if(this.hull[key].type == 'cylinder'){
-                    const cylinderGeometry = new THREE.CylinderGeometry(this.hull[key].radius, this.hull[key].radius, this.hull[key].length, 32);
-                    const cylinderMaterial = new THREE.MeshNormalMaterial();
-                    const cylinderMesh = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-                    cylinderMesh.position.x = this.hull[key].position.x;
-                    cylinderMesh.position.y = this.hull[key].position.y;
-                    cylinderMesh.position.z = this.hull[key].position.z;
-                    shipGroup.add(cylinderMesh);
-            }
-        }
-        for(let key in this.thrusters){
-            console.log(key);
-            if(this.thrusters[key].type == 'cone'){
-                const coneGeometry = new THREE.ConeGeometry(this.thrusters[key].radius, this.thrusters[key].length, 32);
-                const coneMaterial = new THREE.MeshNormalMaterial();
-                const coneMesh = new THREE.Mesh(coneGeometry, coneMaterial);
-                coneMesh.position.x = this.thrusters[key].position.x;
-                coneMesh.position.y = this.thrusters[key].position.y;
-                coneMesh.position.z = this.thrusters[key].position.z;
+            new Thruster({
+                origin: this.position,
+                position: new THREE.Vector3(0, -1, 0), 
+                rotation: new THREE.Vector3(0, 0, 0),
+                direction: new THREE.Vector3(0, 1, 0),
+                force: .1
+            }),
+        ];
 
-                const thrusterGroup = new THREE.Group();
-                thrusterGroup.add(coneMesh);
+        this.generateMesh();
 
-                shipGroup.add(thrusterGroup);
 
-                this.thrusterMesh = thrusterGroup;
-            }
-        }
-
-        this.mesh = shipGroup;
-
-        // let mainHullGeometry = new THREE.CylinderGeometry(1,1,2,32);
-
-        // let geometry = new THREE.BoxGeometry(1,1,1);
-        // let material = new THREE.MeshNormalMaterial();
-        // this.mesh = new THREE.Mesh(mainHullGeometry, material);
     }
+    generateMesh(){
+        const meshGroup = new THREE.Group();
 
+        const sphereGeometry = new THREE.SphereGeometry(1, 16, 16);
+        const material = new THREE.MeshBasicMaterial({color: 0xffff00});
+        const meshSphere = new THREE.Mesh(sphereGeometry, wireframeMaterial);
+        const sphereAxesHelper = new THREE.AxesHelper(1);
+        meshSphere.add(sphereAxesHelper);
+
+        meshGroup.add(meshSphere);
+
+        for(let thruster of this.thrusters){
+            const thrusterGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const thrusterMesh = new THREE.Mesh(thrusterGeometry, meshNormalMaterial);
+            thrusterMesh.position.set(
+                thruster.position.x,
+                thruster.position.y,
+                thruster.position.z
+            );
+            thrusterMesh.rotation.set(
+                thruster.rotation.x,
+                thruster.rotation.y,
+                thruster.rotation.z
+            );
+            const thrusterAxesHelper = new THREE.AxesHelper(1);
+            thrusterAxesHelper.rotation.set(
+                thruster.direction.x,
+                thruster.direction.y,
+                thruster.direction.z
+            )
+            thrusterMesh.add(thrusterAxesHelper);
+            
+            meshGroup.add(thrusterMesh);
+        }
+        this.mesh = meshGroup;
+    }
     addToScene(scene){
         scene.add(this.mesh);
     }
-
     updateMesh(){
+        
+
+
         this.mesh.position.x = this.position.x;
         this.mesh.position.y = this.position.y;
         this.mesh.position.z = this.position.z;
@@ -246,47 +255,37 @@ class SpaceShip extends MovingObject{
         this.mesh.rotation.x = this.rotation.x;
         this.mesh.rotation.y = this.rotation.y;
         this.mesh.rotation.z = this.rotation.z;
-
-        this.thrusterMesh.rotation.x = this.thrusters.primary.direction.x;
-        this.thrusterMesh.rotation.z = this.thrusters.primary.direction.z;
-
-
     }
 
     update(frameTime){
-
-        let windowWidth = window.innerWidth;
-        let windowHeight = window.innerHeight;
-
-        this.thrusters.primary.direction.x = (- inputs.mouseX/windowWidth * Math.PI * 2 + Math.PI) / 4
-        this.thrusters.primary.direction.z = -(-inputs.mouseY/windowHeight * Math.PI * 2 + Math.PI) / 4
-
-
-        if(inputs.keyDownArray[87]){
-            console.log('w')
-            this.thrusters.primary.thrust = 1;
-        }
-
-        this.angularAcceleration.x = -this.thrusters.primary.direction.x * this.thrusters.primary.thrust / this.hull.hull1.mass;
-        this.angularAcceleration.z = -this.thrusters.primary.direction.z * this.thrusters.primary.thrust / this.hull.hull1.mass;
-        this.angularAcceleration.y = -this.thrusters.primary.direction.y * this.thrusters.primary.thrust / this.hull.hull1.mass;
-
-
-        this.acceleration.x = Math.sin(this.rotation.y) * this.thrusters.primary.thrust / this.hull.hull1.mass;
-        this.acceleration.y = Math.cos(this.rotation.y) * this.thrusters.primary.thrust / this.hull.hull1.mass;
-        this.acceleration.z = Math.sin(this.rotation.x) * this.thrusters.primary.thrust / this.hull.hull1.mass;
-
-
+        this.updateMesh();
         this.updatePosition(frameTime);
-        this.updateVelocity(frameTime);
-        // this.updateAcceleration(frameTime);
         this.updateRotation(frameTime);
+        this.updateVelocity(frameTime);
+        this.updateAcceleration(frameTime);
         this.updateAngularVelocity(frameTime);
 
-        this.updateMesh();
+
+        let totalTorque = new THREE.Vector3();
+        let totalForce = new THREE.Vector3();
+
+        for(let thruster of this.thrusters){
+            const force = thruster.direction.clone().applyEuler(thruster.rotation).multiplyScalar(thruster.force);
+            const leverArm = thruster.position.clone().sub(this.position);
+            const torque = leverArm.clone().cross(force);
+
+            totalTorque.add(torque);
+            totalForce.add(force);
+        }
+
+
+        this.angularAcceleration = totalTorque;
+        this.acceleration = totalForce;
+
+
     }
 }
 
 
 
-export {World, Topography, MovingObject, Ball, SpaceShip };
+export {World, Topography, MovingObject, Ball, ForceSphere };
