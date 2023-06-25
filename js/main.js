@@ -19,12 +19,17 @@ threeArea.appendChild( renderer.domElement );
 
 const scene = new THREE.Scene( );
 
+const cameraGroup = new THREE.Group();
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+camera.position.set( -10, 0, 0 );
 
-const controls = new OrbitControls( camera, renderer.domElement );
 
-camera.position.set( -10, 10, 10 );
-controls.update();
+// cameraGroup.add(camera);
+
+// const controls = new OrbitControls( camera, renderer.domElement );
+
+
+// controls.update();
 
 
 const axesHelper = new THREE.AxesHelper( 10 );
@@ -57,6 +62,27 @@ let meshNormalMaterial = new THREE.MeshNormalMaterial( );
 //     scene.add( plane );
 
 
+
+
+let forceSphere = new ForceSphere({
+    position: new THREE.Vector3(0, 0, 0),
+    rotation: new THREE.Vector3(0, 0, 0),
+    velocity: new THREE.Vector3(0, 0, 0),
+    acceleration: new THREE.Vector3(0, 0, 0),
+    angularVelocity: new THREE.Vector3(0, 0, 0),
+    angularAcceleration: new THREE.Vector3(0, 0, 0),
+    mass: 1,
+    radius: 1,
+    restitution: 0.8,
+    friction: 0.1,
+});
+world.addObject(forceSphere);
+forceSphere.mesh.add(camera);
+
+
+
+
+
 function init(){
 
     //Generate a 3D grid of moving spheres
@@ -86,19 +112,6 @@ function init(){
 
     //Create a force sphere
 
-    let forceSphere = new ForceSphere({
-        position: new THREE.Vector3(0, 0, 0),
-        rotation: new THREE.Vector3(0, 0, 0),
-        velocity: new THREE.Vector3(0, 0, 0),
-        acceleration: new THREE.Vector3(0, 0, 0),
-        angularVelocity: new THREE.Vector3(0, 0, 0),
-        angularAcceleration: new THREE.Vector3(0, 0, 0),
-        mass: 1,
-        radius: 1,
-        restitution: 0.8,
-        friction: 0.1,
-    });
-    world.addObject(forceSphere);
 
 
     //Add the world objects to the scene
@@ -114,9 +127,10 @@ init();
 function animate( ) {
     // console.log(arrow)
 
+    camera.lookAt( forceSphere.position );
+    cameraGroup.position.set( forceSphere.position);
+    cameraGroup.rotation.set( forceSphere.rotation);
 
-
-    
 
     world.update();
 
@@ -124,7 +138,7 @@ function animate( ) {
 	requestAnimationFrame( animate );
 
 
-    controls.update( );
+    // controls.update( );
 
 	renderer.render( scene, camera );
 }
