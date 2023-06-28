@@ -4,9 +4,13 @@ import * as THREE from 'three';
 
 
 // Constants
-const GRAVITY = 9.81; // m/s^2
+const GRAVITY = .981; // m/s^2
 const AIR_DENSITY = 1.225; // kg/m^3
 const AIR_VISCOSITY = 1.7894e-5; // kg/(m*s)
+let windSpeed = {
+    x: 0,
+    z: 0,
+}
 
 
 class World {
@@ -40,7 +44,6 @@ class World {
             }
             this.objects[i].update(frameTime , this.planets, this.orbitals);
         }
-        
     }
 }
 
@@ -151,19 +154,54 @@ class Orbital extends MovingObject{
             accelerationVector.copy(direction);
             accelerationVector.multiplyScalar(force);
             acceleration.add(accelerationVector);
+            acceleration.y -= GRAVITY;
+            if(Math.abs(acceleration.y) > .5){
+                acceleration.y = (Math.abs(acceleration.y) / acceleration.y )* .5;
+            }
+            if(Math.abs(acceleration.x) > 1){
+                acceleration.x = Math.abs(acceleration.x) / acceleration.x;
+            }
+            if(Math.abs(acceleration.z) > 1){
+                acceleration.z = Math.abs(acceleration.z) / acceleration.z;
+            }
         }
         return acceleration;
     }
 
-    update(frameTime, planets, orbitals){        
+    update(frameTime, planets, orbitals){       
+        if(this.position.y < -1000){
+            this.position.y = 1000;
+            this.position.x = Math.random() * 1000 - 500;
+            this.position.z = Math.random() * 1000 - 500;
+
+
+            this.acceleration.y = 0;
+            this.acceleration.x = 0;
+            this.acceleration.z = 0;
+            
+            this.velocity.y = 0;
+            this.velocity.x = 0;
+            this.velocity.z = 0;
+        }
+        
+
         this.updatePosition(frameTime);
         this.updateRotation(frameTime);
         this.updateVelocity(frameTime);
+        if(this.velocity.y < -5){
+            this.velocity.y = -5;
+        }
+
         this.updateAngularVelocity(frameTime);
         this.updateMesh();
-
         this.acceleration = this.calculateAcceleration(planets);
     }
+
+    delete(){
+        this.mesh.geometry.dispose();
+        this.mesh.material.dispose();
+    }
+
 }
 
 class Planet extends Topography{
@@ -195,6 +233,7 @@ class Planet extends Topography{
         mesh.position.x = this.position.x;
         mesh.position.y = this.position.y;
         mesh.position.z = this.position.z;
+        mesh.visible = false;
         this.mesh = mesh;
     }
     updateMesh(){
@@ -215,8 +254,6 @@ class Planet extends Topography{
         this.orbitalRotation += this.orbitalPeriod * frameTime / 1000;
         this.position.x = Math.sin(this.orbitalRotation) * this.orbitalRadius;
         this.position.z = Math.cos(this.orbitalRotation) * this.orbitalRadius
-        console.log(this.orbitalRotation);
-
         this.updateMesh();
     }
 }

@@ -19,7 +19,7 @@ threeArea.appendChild( renderer.domElement );
 
 const scene = new THREE.Scene( );
 
-const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100000 );
 camera.position.set( 10, 10, 10 );
 
 
@@ -29,7 +29,7 @@ const controls = new OrbitControls( camera, renderer.domElement );
 controls.update();
 
 
-let sphereGeometry = new THREE.SphereGeometry( 15, 32, 32 );
+let sphereGeometry = new THREE.SphereGeometry( 1, 32, 32 );
 let meshNormalMaterial = new THREE.MeshNormalMaterial( );
 
 
@@ -65,8 +65,8 @@ function init(){
         position: new THREE.Vector3(0, 0, 0),
         rotation: new THREE.Vector3(0, 0, 0),
         radius: 100,
-        mass: 10000,
-        orbitalRadius: 1000,
+        mass: 200000,
+        orbitalRadius: 100,
         orbitalPeriod: 1000,
         orbitalRotation: 0,
     });
@@ -78,7 +78,7 @@ function init(){
         position: new THREE.Vector3(0, 0, 0),
         rotation: new THREE.Vector3(0, 0, 0),
         radius: 500,
-        mass: 10000000,
+        mass: 2000000,
         orbitalRadius: 2000,
         orbitalPeriod: 500,
         orbitalRotation: 10,
@@ -105,19 +105,19 @@ function init(){
 
 
     //Generate a 3D grid of moving spheres
-    for(let i = -15; i < 15; i++){
-        for(let j = -15; j < 15; j++){
-            for(let k = -15; k < 15; k++){
+    for(let i = -10; i < 10; i++){
+        for(let j = -10; j < 10; j++){
+            for(let k = -10; k < 10; k++){
                     let sphere = new THREE.Mesh(sphereGeometry, meshNormalMaterial);
                     let orbital = new Orbital({
-                        position: new THREE.Vector3(i * 100 + Math.random() * 50, j * 100 + Math.random() * 50, k * 100 + Math.random() * 50),
+                        position: new THREE.Vector3(i * 100 + Math.random() * 100, j * 100 + Math.random() * 100, k * 100 + Math.random() * 100),
                         rotation: new THREE.Vector3(0, 0, 0),
                         velocity: new THREE.Vector3((Math.random()-.5)*10, (Math.random()-.5)*10,(Math.random()-.5)*10),
                         acceleration: new THREE.Vector3(0, 0, 0),
                         angularVelocity: new THREE.Vector3(0, 0, 0),
                         angularAcceleration: new THREE.Vector3(0, 0, 0),
                         mass: 100,
-                        radius: 1,
+                        radius: .1,
                         restitution: 0.8,
                         friction: 0.1,
                         mesh: sphere
