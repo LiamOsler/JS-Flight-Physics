@@ -1,6 +1,6 @@
 import { inputs } from 'inputs';
 
-import { World, Ball, ForceSphere} from 'world';
+import { World,  Planet, Orbital} from 'world';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
@@ -19,39 +19,17 @@ threeArea.appendChild( renderer.domElement );
 
 const scene = new THREE.Scene( );
 
-const cameraGroup = new THREE.Group();
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
-camera.position.set( -10, 0, 0 );
+camera.position.set( 10, 10, 10 );
 
 
-// cameraGroup.add(camera);
-
-// const controls = new OrbitControls( camera, renderer.domElement );
+const controls = new OrbitControls( camera, renderer.domElement );
 
 
-// controls.update();
+controls.update();
 
 
-const axesHelper = new THREE.AxesHelper( 10 );
-scene.add( axesHelper );
-
-
-const grid = new THREE.GridHelper( 10, 10 );
-
-scene.add( grid );
-
-const light = new THREE.DirectionalLight( 0xffffff, .1 );
-light.position.set( 100, 100, 100 );
-scene.add( light );
-
-
-const ambientLight = new THREE.AmbientLight( 0x404040 ); // soft white light
-scene.add( ambientLight );
-
-
-
-
-let sphereGeometry = new THREE.SphereGeometry( 5, 32, 32 );
+let sphereGeometry = new THREE.SphereGeometry( 15, 32, 32 );
 let meshNormalMaterial = new THREE.MeshNormalMaterial( );
 
 
@@ -62,59 +40,96 @@ let meshNormalMaterial = new THREE.MeshNormalMaterial( );
 //     scene.add( plane );
 
 
-
-
-let forceSphere = new ForceSphere({
-    position: new THREE.Vector3(0, 0, 0),
-    rotation: new THREE.Vector3(0, 0, 0),
-    velocity: new THREE.Vector3(0, 0, 0),
-    acceleration: new THREE.Vector3(0, 0, 0),
-    angularVelocity: new THREE.Vector3(0, 0, 0),
-    angularAcceleration: new THREE.Vector3(0, 0, 0),
-    mass: 1,
-    radius: 1,
-    restitution: 0.8,
-    friction: 0.1,
-});
-world.addObject(forceSphere);
-forceSphere.mesh.add(camera);
-
-
-
-
-
 function init(){
+    scene.remove.apply(scene, scene.children);
+    const axesHelper = new THREE.AxesHelper( 10 );
+    scene.add( axesHelper );
+
+
+    const grid = new THREE.GridHelper( 10, 10 );
+
+    scene.add( grid );
+
+    const light = new THREE.DirectionalLight( 0xffffff, .1 );
+    light.position.set( 100, 100, 100 );
+    scene.add( light );
+
+
+    const ambientLight = new THREE.AmbientLight( 0x404040 ); // soft white light
+    scene.add( ambientLight );
+
+    world = new World( clock );
+    world.objects = [];
+
+    let planet = new Planet({
+        position: new THREE.Vector3(0, 0, 0),
+        rotation: new THREE.Vector3(0, 0, 0),
+        radius: 100,
+        mass: 10000,
+        orbitalRadius: 1000,
+        orbitalPeriod: 1000,
+        orbitalRotation: 0,
+    });
+
+    world.addObject(planet);
+    world.planets.push(planet);
+
+    let planet2 = new Planet({
+        position: new THREE.Vector3(0, 0, 0),
+        rotation: new THREE.Vector3(0, 0, 0),
+        radius: 500,
+        mass: 10000000,
+        orbitalRadius: 2000,
+        orbitalPeriod: 500,
+        orbitalRotation: 10,
+    });
+
+    world.addObject(planet2);
+    world.planets.push(planet2);
+
+
+    // let planet2 = new Planet({
+    //     position: new THREE.Vector3(0, 0, 0),
+    //     rotation: new THREE.Vector3(0, 0, 0),
+    //     radius: 100,
+    //     mass: 10000,
+    //     orbitalRadius: 1200,
+    //     orbitalPeriod: 10
+    // });
+
+    
+    // world.addObject(planet2);
+    // world.planets.push(planet2);
+
+
+
 
     //Generate a 3D grid of moving spheres
-    for(let i = 0; i < 10; i++){
-        for(let j = 0; j < 10; j++){
-            for(let k = 0; k < 10; k++){
+    for(let i = -15; i < 15; i++){
+        for(let j = -15; j < 15; j++){
+            for(let k = -15; k < 15; k++){
                     let sphere = new THREE.Mesh(sphereGeometry, meshNormalMaterial);
-    
-                    let ball = new Ball({
+                    let orbital = new Orbital({
                         position: new THREE.Vector3(i * 100 + Math.random() * 50, j * 100 + Math.random() * 50, k * 100 + Math.random() * 50),
                         rotation: new THREE.Vector3(0, 0, 0),
-                        velocity: new THREE.Vector3((Math.random()-.5)*5, (Math.random()-.5)*5,(Math.random()-.5)*5),
+                        velocity: new THREE.Vector3((Math.random()-.5)*10, (Math.random()-.5)*10,(Math.random()-.5)*10),
                         acceleration: new THREE.Vector3(0, 0, 0),
                         angularVelocity: new THREE.Vector3(0, 0, 0),
                         angularAcceleration: new THREE.Vector3(0, 0, 0),
-                        mass: 1,
+                        mass: 100,
                         radius: 1,
                         restitution: 0.8,
                         friction: 0.1,
                         mesh: sphere
                     });
-                    ball.updateMesh();
-                    world.addObject(ball);
+                    orbital.updateMesh();
+                    world.addObject(orbital);
+                    world.orbitals.push(orbital);
             }
         }   
     }
 
-    //Create a force sphere
 
-
-
-    //Add the world objects to the scene
     for(let i = 0; i < world.objects.length; i++){
         world.objects[i].addToScene(scene);
     }
@@ -122,14 +137,14 @@ function init(){
 
 init();
 
+document.getElementById('start-button').addEventListener('click', function(){
+    init();
+});
+
 
 
 function animate( ) {
     // console.log(arrow)
-
-    camera.lookAt( forceSphere.position );
-    cameraGroup.position.set( forceSphere.position);
-    cameraGroup.rotation.set( forceSphere.rotation);
 
 
     world.update();
@@ -138,7 +153,7 @@ function animate( ) {
 	requestAnimationFrame( animate );
 
 
-    // controls.update( );
+    controls.update( );
 
 	renderer.render( scene, camera );
 }
