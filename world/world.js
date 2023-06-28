@@ -11,6 +11,7 @@ let windSpeed = {
     x: 0,
     z: 0,
 }
+let windDirection = 0;
 
 
 class World {
@@ -42,8 +43,13 @@ class World {
             if(!frameTime){
                 frameTime = 0;
             }
-            this.objects[i].update(frameTime , this.planets, this.orbitals);
+            this.objects[i].update(frameTime *10, this.planets, this.orbitals);
         }
+
+        windDirection += .001;
+        windSpeed.x = Math.sin(windDirection) * .01;
+        windSpeed.z = Math.cos(windDirection) * .01;
+
     }
 }
 
@@ -87,9 +93,9 @@ class MovingObject extends Topography{
         this.position.z += this.velocity.z * frameTime;
     }
     updateVelocity(frameTime){
-        this.velocity.x += this.acceleration.x * frameTime;
+        this.velocity.x += this.acceleration.x * frameTime + windSpeed.x;
         this.velocity.y += this.acceleration.y * frameTime;
-        this.velocity.z += this.acceleration.z * frameTime;
+        this.velocity.z += this.acceleration.z * frameTime + windSpeed.z;
     }
     updateRotation(frameTime){
         this.rotation.x += this.angularVelocity.x * frameTime;
@@ -110,6 +116,40 @@ class MovingObject extends Topography{
     }
 }
 
+const initialLength = 1
+const initialAngle = -Math.PI / 2;
+const initialX = 0;
+const initialY = 0;
+const angleVariation = Math.PI / 6;
+const lengthReductionFactor = 1;
+const recursionLimit = 2;
+
+// Function to draw a line segment
+
+let recurseSnowflake = [];
+// Recursive function to generate the snowflake
+ function generateSnowflake(x, y, length, angle, depth, snowflake) {
+  if (depth > recursionLimit) {
+    return snowflake;
+  }
+
+  const x2 = x + length * Math.cos(angle);
+  const y2 = y + length * Math.sin(angle);
+
+  snowflake.push([x, y, x2, y2])
+
+  const nextLength = length * lengthReductionFactor;
+  const randomAngle = angle + (Math.random() * 2 - 1) * angleVariation;
+
+  generateSnowflake(x2, y2, nextLength, randomAngle + Math.PI / 3, depth + 1, snowflake);
+  generateSnowflake(x2, y2, nextLength, randomAngle - Math.PI / 3, depth + 1, snowflake);
+}
+
+
+let baseCylinder = new THREE.CylinderGeometry(.1, .1, 1, 32);
+let snowMaterial = new THREE.MeshPhongMaterial({color: 0xffffff, transparent: true, opacity: .5});
+
+let baseSphere = new THREE.SphereGeometry(.1, 32, 32);
 
 class Orbital extends MovingObject{
     constructor(params){
@@ -125,10 +165,58 @@ class Orbital extends MovingObject{
         );
         this.mesh = params.mesh;
         this.planets = params.planets;
+        this.generateMesh();
     }
+
+    generateMesh(){
+        this.mesh = new THREE.Group();
+
+        // this.mesh = new THREE.Mesh(
+        //     new THREE.SphereGeometry(1, 32, 32),
+        //     new THREE.MeshPhongMaterial({color: 0xffffff})
+        // );
+        const recurseSnowflake = [];
+        generateSnowflake(initialX, initialY, initialLength, initialAngle, 0, recurseSnowflake);
+
+
+        let quadrant = new THREE.Group();
+
+        for(let item of recurseSnowflake){
+            let distance = Math.sqrt(Math.pow(item[2] - item[0], 2) + Math.pow(item[3] - item[1], 2));
+
+            const sphere = new THREE.Mesh(
+                baseSphere,
+                snowMaterial
+            );
+            sphere.position.x = item[0];
+            sphere.position.y = item[1];
+            sphere.position.z =  0;
+
+
+
+            sphere.scale.x = distance * 5;
+            sphere.scale.y = distance * 5;
+            sphere.scale.z = distance * 5;
+
+            // cylinder.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.atan2(item[3] - item[1], item[2] - item[0]));
+            quadrant.add(sphere);
+        }
+
+        for(let i = 0; i < 4; i++){
+            let newQuadrant = quadrant.clone();
+            newQuadrant.rotateOnAxis(new THREE.Vector3(0, 0, 1), i * Math.PI / 2);
+            this.mesh.add(newQuadrant);
+        }
+
+        this.mesh.position.x = this.position.x;
+        this.mesh.position.y = this.position.y;
+        this.mesh.position.z = this.position.z;
+    }
+
     addToScene(scene){
         scene.add(this.mesh);
     }
+
     
     updateMesh(){
         this.mesh.position.x = this.position.x;
@@ -167,12 +255,48 @@ class Orbital extends MovingObject{
         }
         return acceleration;
     }
+    calculateRotation(){
+        let rotation = new THREE.Vector3(0, 0, 0);
+        let angleOfAttack = new THREE.Vector3(0, 0, 0);
+        angleOfAttack = {
+            x: Math.atan2(this.velocity.y, this.velocity.z) - Math.PI / 2,
+            y: Math.atan2(this.velocity.x, this.velocity.z),
+            z: Math.atan2(this.velocity.y, this.velocity.x),
+        }
+        if(this.rotation.x > angleOfAttack.x){
+            this.angularAcceleration.x = -.1;
+        }
+        else if(this.rotation.x < angleOfAttack.x){
+            this.angularAcceleration.x = .1;
+        }
+        else{
+            this.angularAcceleration.x = 0;
+        }
+        if(this.rotation.y > angleOfAttack.y){
+            this.angularAcceleration.y = -.1;
+        }
+        else if(this.rotation.y < angleOfAttack.y){
+            this.angularAcceleration.y = .1;
+        }
+        else{
+            this.angularAcceleration.y = 0;
+        }
+        if(this.rotation.z > angleOfAttack.z){
+            this.angularAcceleration.z = -.1;
+        }
+        else if(this.rotation.z < angleOfAttack.z){
+            this.angularAcceleration.z = .1;
+        }
+        else{
+            this.angularAcceleration.z = 0;
+        }
+    }
 
     update(frameTime, planets, orbitals){       
-        if(this.position.y < -1000){
+        if(this.position.y < -1000 || this.position.y > 1000 || this.position.x < -1000 || this.position.x > 1000 || this.position.z < -1000 || this.position.z > 1000){
             this.position.y = 1000;
-            this.position.x = Math.random() * 1000 - 500;
-            this.position.z = Math.random() * 1000 - 500;
+            this.position.x = Math.random() * 1000 - 1000;
+            this.position.z = Math.random() * 1000 - 1000;
 
 
             this.acceleration.y = 0;
@@ -193,6 +317,7 @@ class Orbital extends MovingObject{
         }
 
         this.updateAngularVelocity(frameTime);
+        this.calculateRotation();
         this.updateMesh();
         this.acceleration = this.calculateAcceleration(planets);
     }
@@ -203,6 +328,7 @@ class Orbital extends MovingObject{
     }
 
 }
+
 
 class Planet extends Topography{
     constructor(params){
